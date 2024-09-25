@@ -1,0 +1,9 @@
+name: cam-timelapse
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+    - opencv-python
+    - ffmpeg-python

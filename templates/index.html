@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timelapse Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .image-grid { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+        }
+        .image-item {
+            position: relative;
+            width: 150px;
+            cursor: pointer;
+        }
+        .image-item img {
+            width: 100%;
+            height: auto;
+        }
+        .image-item.selected {
+            border: 4px solid #4caf50;
+        }
+        .controls { 
+            margin: 20px 0; 
+        }
+        .selected-range {
+            font-weight: bold;
+        }
+        .message {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Timelapse Generator</h1>
+
+    <form id="timelapseForm">
+        <div class="controls">
+            <label>Selected Range: </label>
+            <span class="selected-range" id="selectedRange">None</span>
+        </div>
+        <button type="submit">Generate Timelapse</button>
+    </form>
+
+    <div class="image-grid">
+        {% for index, image in images %}
+        <div class="image-item" data-index="{{ index }}">
+            <img src="/timelapse_frames/{{ image }}" alt="Frame {{ index }}">
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <script>
+        let startIdx = null;
+        let endIdx = null;
+
+        // Update the selected range text
+        function updateSelectedRange() {
+            const selectedRangeElement = document.getElementById('selectedRange');
+            if (startIdx !== null && endIdx !== null) {
+                selectedRangeElement.textContent = `${startIdx} - ${endIdx}`;
+            } else {
+                selectedRangeElement.textContent = 'None';
+            }
+        }
+
+        // Handle image selection
+        document.querySelectorAll('.image-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const index = parseInt(item.dataset.index, 10);
+                
+                // If no startIdx is set, this is the start
+                if (startIdx === null || endIdx !== null) {
+                    startIdx = index;
+                    endIdx = null;  // Reset the end index
+                } else if (index >= startIdx) {
+                    endIdx = index;
+                }
+
+                // Update selected images visually
+                document.querySelectorAll('.image-item').forEach(imageItem => {
+                    const itemIndex = parseInt(imageItem.dataset.index, 10);
+                    imageItem.classList.remove('selected');
+                    if (startIdx !== null && itemIndex >= startIdx && (endIdx === null || itemIndex <= endIdx)) {
+                        imageItem.classList.add('selected');
+                    }
+                });
+
+                updateSelectedRange();
+            });
+        });
+
+        // Handle form submission
+        document.getElementById('timelapseForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            if (startIdx === null || endIdx === null) {
+                document.getElementById('message').textContent = 'Please select a valid range of images.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('start_idx', startIdx);
+            formData.append('end_idx', endIdx);
+
+            fetch('/generate_timelapse', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const messageElement = document.getElementById('message');
+                if (data.status === 'success') {
+                    messageElement.textContent = 'Timelapse created successfully!';
+                } else {
+                    messageElement.textContent = 'Error: ' + data.message;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>

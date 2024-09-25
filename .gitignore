@@ -1,3 +1,9 @@
+timelapse_frames/
+timelapse_video/
+
+# Ignore the .secrets file
+.secrets
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
