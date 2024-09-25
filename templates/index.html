@@ -32,11 +32,21 @@
         .message {
             margin-top: 20px;
         }
+        .download-button, .generate-button {
+            margin-top: 20px;
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
     <h1>Timelapse Generator</h1>
 
+    <!-- Form for generating timelapse from selected images -->
     <form id="timelapseForm">
         <div class="controls">
             <label>Selected Range: </label>
@@ -44,6 +54,9 @@
         </div>
         <button type="submit">Generate Timelapse</button>
     </form>
+
+    <!-- Button to generate full timelapse -->
+    <button class="generate-button" id="generateFullTimelapse">Generate Full Timelapse</button>
 
     <div class="image-grid">
         {% for index, image in images %}
@@ -55,11 +68,16 @@
 
     <div class="message" id="message"></div>
 
+    {% if video_exists %}
+    <div>
+        <a class="download-button" href="/download_timelapse" download>Download Last Timelapse Video</a>
+    </div>
+    {% endif %}
+
     <script>
         let startIdx = null;
         let endIdx = null;
 
-        // Update the selected range text
         function updateSelectedRange() {
             const selectedRangeElement = document.getElementById('selectedRange');
             if (startIdx !== null && endIdx !== null) {
@@ -69,20 +87,15 @@
             }
         }
 
-        // Handle image selection
         document.querySelectorAll('.image-item').forEach(item => {
             item.addEventListener('click', () => {
                 const index = parseInt(item.dataset.index, 10);
-                
-                // If no startIdx is set, this is the start
                 if (startIdx === null || endIdx !== null) {
                     startIdx = index;
-                    endIdx = null;  // Reset the end index
+                    endIdx = null;
                 } else if (index >= startIdx) {
                     endIdx = index;
                 }
-
-                // Update selected images visually
                 document.querySelectorAll('.image-item').forEach(imageItem => {
                     const itemIndex = parseInt(imageItem.dataset.index, 10);
                     imageItem.classList.remove('selected');
@@ -90,24 +103,20 @@
                         imageItem.classList.add('selected');
                     }
                 });
-
                 updateSelectedRange();
             });
         });
 
-        // Handle form submission
+        // Form submission for selected range timelapse
         document.getElementById('timelapseForm').addEventListener('submit', function(event) {
             event.preventDefault();
-
             if (startIdx === null || endIdx === null) {
                 document.getElementById('message').textContent = 'Please select a valid range of images.';
                 return;
             }
-
             const formData = new FormData();
             formData.append('start_idx', startIdx);
             formData.append('end_idx', endIdx);
-
             fetch('/generate_timelapse', {
                 method: 'POST',
                 body: formData
@@ -117,6 +126,25 @@
                 const messageElement = document.getElementById('message');
                 if (data.status === 'success') {
                     messageElement.textContent = 'Timelapse created successfully!';
+                    setTimeout(() => window.location.reload(), 1000); // Reload the page to show the download button
+                } else {
+                    messageElement.textContent = 'Error: ' + data.message;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Generate full timelapse button
+        document.getElementById('generateFullTimelapse').addEventListener('click', function() {
+            fetch('/generate_full_timelapse', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const messageElement = document.getElementById('message');
+                if (data.status === 'success') {
+                    messageElement.textContent = 'Full timelapse created successfully!';
+                    setTimeout(() => window.location.reload(), 1000); // Reload the page to show the download button
                 } else {
                     messageElement.textContent = 'Error: ' + data.message;
                 }
