@@ -3,154 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timelapse Generator</title>
+    <title>Timelapse Videos</title>
     <style>
         body { font-family: Arial, sans-serif; }
-        .image-grid { 
+        .thumbnail-grid { 
             display: flex; 
             flex-wrap: wrap; 
-            gap: 10px; 
+            gap: 20px; 
         }
-        .image-item {
+        .thumbnail-item {
             position: relative;
-            width: 150px;
-            cursor: pointer;
+            width: 200px;
+            text-align: center;
         }
-        .image-item img {
+        .thumbnail-item img {
             width: 100%;
             height: auto;
         }
-        .image-item.selected {
-            border: 4px solid #4caf50;
-        }
-        .controls { 
-            margin: 20px 0; 
-        }
-        .selected-range {
-            font-weight: bold;
-        }
-        .message {
-            margin-top: 20px;
-        }
-        .download-button, .generate-button {
-            margin-top: 20px;
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #4caf50;
-            color: white;
+        .thumbnail-item a {
             text-decoration: none;
-            border-radius: 5px;
+            color: black;
         }
     </style>
 </head>
 <body>
-    <h1>Timelapse Generator</h1>
+    <h1>Timelapse Videos</h1>
 
-    <!-- Form for generating timelapse from selected images -->
-    <form id="timelapseForm">
-        <div class="controls">
-            <label>Selected Range: </label>
-            <span class="selected-range" id="selectedRange">None</span>
-        </div>
-        <button type="submit">Generate Timelapse</button>
-    </form>
-
-    <!-- Button to generate full timelapse -->
-    <button class="generate-button" id="generateFullTimelapse">Generate Full Timelapse</button>
-
-    <div class="image-grid">
-        {% for index, image in images %}
-        <div class="image-item" data-index="{{ index }}">
-            <img src="/timelapse_frames/{{ image }}" alt="Frame {{ index }}">
+    <div class="thumbnail-grid">
+        {% for video, thumbnail in videos.items() %}
+        <div class="thumbnail-item">
+            <a href="/download_timelapse/{{ video }}">
+                <img src="/timelapse_thumbnails/{{ thumbnail }}" alt="Thumbnail for {{ video }}">
+                <p>{{ video }}</p>
+            </a>
         </div>
         {% endfor %}
     </div>
 
     <div class="message" id="message"></div>
 
-    {% if video_exists %}
-    <div>
-        <a class="download-button" href="/download_timelapse" download>Download Last Timelapse Video</a>
-    </div>
-    {% endif %}
-
-    <script>
-        let startIdx = null;
-        let endIdx = null;
-
-        function updateSelectedRange() {
-            const selectedRangeElement = document.getElementById('selectedRange');
-            if (startIdx !== null && endIdx !== null) {
-                selectedRangeElement.textContent = `${startIdx} - ${endIdx}`;
-            } else {
-                selectedRangeElement.textContent = 'None';
-            }
-        }
-
-        document.querySelectorAll('.image-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const index = parseInt(item.dataset.index, 10);
-                if (startIdx === null || endIdx !== null) {
-                    startIdx = index;
-                    endIdx = null;
-                } else if (index >= startIdx) {
-                    endIdx = index;
-                }
-                document.querySelectorAll('.image-item').forEach(imageItem => {
-                    const itemIndex = parseInt(imageItem.dataset.index, 10);
-                    imageItem.classList.remove('selected');
-                    if (startIdx !== null && itemIndex >= startIdx && (endIdx === null || itemIndex <= endIdx)) {
-                        imageItem.classList.add('selected');
-                    }
-                });
-                updateSelectedRange();
-            });
-        });
-
-        // Form submission for selected range timelapse
-        document.getElementById('timelapseForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            if (startIdx === null || endIdx === null) {
-                document.getElementById('message').textContent = 'Please select a valid range of images.';
-                return;
-            }
-            const formData = new FormData();
-            formData.append('start_idx', startIdx);
-            formData.append('end_idx', endIdx);
-            fetch('/generate_timelapse', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                const messageElement = document.getElementById('message');
-                if (data.status === 'success') {
-                    messageElement.textContent = 'Timelapse created successfully!';
-                    setTimeout(() => window.location.reload(), 1000); // Reload the page to show the download button
-                } else {
-                    messageElement.textContent = 'Error: ' + data.message;
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-
-        // Generate full timelapse button
-        document.getElementById('generateFullTimelapse').addEventListener('click', function() {
-            fetch('/generate_full_timelapse', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                const messageElement = document.getElementById('message');
-                if (data.status === 'success') {
-                    messageElement.textContent = 'Full timelapse created successfully!';
-                    setTimeout(() => window.location.reload(), 1000); // Reload the page to show the download button
-                } else {
-                    messageElement.textContent = 'Error: ' + data.message;
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-    </script>
 </body>
 </html>

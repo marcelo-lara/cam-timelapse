@@ -5,7 +5,7 @@ services:
     build: .
     container_name: timelapse_capture
     environment:
-      - CAPTURE_INTERVAL=120  # Time interval in seconds (default 120)
+      - CAPTURE_INTERVAL=60  # Time interval in seconds (default 120)
       - OUTPUT_DIR=/usr/src/app/timelapse_frames  # Directory for storing captured frames
       - VIDEO_OUTPUT=/usr/src/app/timelapse_video/video.mp4  # Path for the timelapse video
       - FRAME_WIDTH=1280  # Width of the captured frames

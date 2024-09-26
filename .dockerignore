@@ -1,0 +1,3 @@
+# Ignore image and video folders
+timelapse_frames/
+timelapse_video/

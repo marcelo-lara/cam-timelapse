@@ -11,6 +11,12 @@ RUN apt-get update && \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
+# Set the timezone to America/Argentina/Buenos_Aires (UTC-3)
+ENV TZ=America/Argentina/Buenos_Aires
+
+# Set environment variable to ensure print statements are flushed immediately
+ENV PYTHONUNBUFFERED=1
+
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
