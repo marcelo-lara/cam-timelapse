@@ -9,6 +9,7 @@ RUN apt-get update && \
     libxext6 \
     libxrender-dev \
     ffmpeg \
+    libx264-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the timezone to America/Argentina/Buenos_Aires (UTC-3)

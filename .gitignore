@@ -1,5 +1,5 @@
 timelapse_frames/
-timelapse_video/
+timelapse_videos/
 
 # Ignore the .secrets file
 .secrets

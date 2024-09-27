@@ -7,7 +7,7 @@ services:
     environment:
       - CAPTURE_INTERVAL=60  # Time interval in seconds (default 120)
       - OUTPUT_DIR=/usr/src/app/timelapse_frames  # Directory for storing captured frames
-      - VIDEO_OUTPUT=/usr/src/app/timelapse_video/video.mp4  # Path for the timelapse video
+      - VIDEO_OUTPUT=/usr/src/app/timelapse_video  # Path for the timelapse videos
       - FRAME_WIDTH=1280  # Width of the captured frames
       - FRAME_HEIGHT=720  # Height of the captured frames
       - FPS=30  # Frames per second for the timelapse video
@@ -17,7 +17,7 @@ services:
       - "5000:5000"  # Expose the web UI on port 5000
     volumes:
       - ./timelapse_frames:/usr/src/app/timelapse_frames  # Bind mount the frame output folder
-      - ./timelapse_video:/usr/src/app/timelapse_video  # Bind mount the frame output folder
+      - ./timelapse_videos:/usr/src/app/timelapse_videos  # Bind mount the frame output folder
     restart: unless-stopped
 
 secrets:
