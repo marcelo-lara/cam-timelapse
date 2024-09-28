@@ -1,4 +1,6 @@
 import cv2
+import subprocess
+
 import time
 import os
 from datetime import datetime
@@ -6,7 +8,7 @@ import schedule
 import threading
 import ffmpeg
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from capture import capture_frame, capture_loop
+from capture import capture_loop
 from glob import glob
 
 # Directories for frames, videos, and thumbnails
@@ -95,22 +97,30 @@ def create_timelapse_videos():
         frame = cv2.imread(images[0])
         height, width, layers = frame.shape
         video_filename = os.path.join(VIDEO_DIR, f"{date_str}.mp4")
-        print(f"rendering: {video_filename}")
+        print(f"Rendering: {video_filename}")
 
-        video = cv2.VideoWriter(video_filename, cv2.VideoWriter_fourcc(*'X264'), FPS, (width, height))
+        # Generate a file list for FFmpeg input
+        file_list = os.path.join(OUTPUT_DIR, f"{date_str}_file_list.txt")
+        with open(file_list, 'w') as f:
+            for image in images:
+                f.write(f"file '{image}'\n")
 
-        for image in images:
-            frame = cv2.imread(image)
-            video.write(frame)
-        
-        video.release()
+        # Use FFmpeg to create the video
+        ffmpeg_command = [
+            'ffmpeg', '-y', '-r', str(FPS), '-f', 'concat', '-safe', '0',
+            '-i', file_list, '-vcodec', 'libx264', '-preset', 'slower', '-crf', '24', '-pix_fmt', 'yuv420p', video_filename
+        ]
+        subprocess.run(ffmpeg_command)
+
+        # Remove the file list after video creation
+        os.remove(file_list)
 
         # Infer the thumbnail path based on the video path
         thumbnail_path = os.path.splitext(video_filename)[0] + ".jpg"
 
-        # Save the first frame as the thumbnail
+        # Save the middle frame as the thumbnail
         if images:
-            thumb_frame = int(len(images) / 2 )
+            thumb_frame = int(len(images) / 2)
             thumb_image = cv2.imread(images[thumb_frame])
             cv2.imwrite(thumbnail_path, thumb_image)
 
