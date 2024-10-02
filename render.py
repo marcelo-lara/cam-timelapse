@@ -2,7 +2,7 @@ import cv2
 from glob import glob
 import os
 import subprocess
-
+from datetime import datetime
 
 def create_timelapse_videos(FRAMES_DIR, VIDEO_DIR, FPS = 30):
     print("Creating timelapse videos...")
@@ -10,10 +10,16 @@ def create_timelapse_videos(FRAMES_DIR, VIDEO_DIR, FPS = 30):
     # Get all the images in the FRAMES_DIR directory
     image_files = glob(os.path.join(FRAMES_DIR, "*.jpg"))
     
+    # Get today's date string
+    today_date_str = datetime.now().strftime("%Y%m%d")
+
     # Group images by date
     images_by_date = {}
     for image_file in image_files:
         date_str = os.path.basename(image_file).split('_')[0]
+        if date_str == today_date_str:
+            continue  # Skip images with today's timestamp
+                
         if date_str not in images_by_date:
             images_by_date[date_str] = []
         images_by_date[date_str].append(image_file)
@@ -38,7 +44,6 @@ def create_timelapse_videos(FRAMES_DIR, VIDEO_DIR, FPS = 30):
             '-i', file_list, '-vcodec', 'libx264', '-preset', 'slower', '-crf', '24', '-pix_fmt', 'yuv420p', video_filename
         ]
         subprocess.run(ffmpeg_command)
-
 
         # Infer the thumbnail path based on the video path
         thumbnail_path = os.path.splitext(video_filename)[0] + ".jpg"

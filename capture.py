@@ -3,6 +3,8 @@ import os
 import time
 from datetime import datetime
 
+from render import create_timelapse_videos
+
 # Read the RTSP_URL from the Docker secret file
 def read_secret(secret_name):
     secret_path = f'/run/secrets/{secret_name}'
@@ -21,6 +23,7 @@ if not RTSP_URL:
 CAPTURE_INTERVAL = int(os.getenv('CAPTURE_INTERVAL', 120))  # Time between frame captures
 FRAME_WIDTH = int(os.getenv('FRAME_WIDTH', 1280))
 FRAME_HEIGHT = int(os.getenv('FRAME_HEIGHT', 720))
+CURRENT_DAY = datetime.now().strftime("%Y%m%d")
 
 def capture_frame(rtsp_url, OUTPUT_DIR):
     cap = cv2.VideoCapture(rtsp_url)
@@ -29,7 +32,7 @@ def capture_frame(rtsp_url, OUTPUT_DIR):
         return None
 
     ret, frame = cap.read()
-
+    
     if ret:
         frame = cv2.resize(frame, (FRAME_WIDTH, FRAME_HEIGHT))
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -41,12 +44,21 @@ def capture_frame(rtsp_url, OUTPUT_DIR):
         print(f"Error: Unable to read frame from {rtsp_url}")
         cap.release()
         return None
+    
 
-def capture_loop(OUTPUT_DIR):
+
+def capture_loop(OUTPUT_DIR, VIDEO_DIR, FPS):
     print("Capture loop started")
+    global CURRENT_DAY
     try:
         while True:
             capture_frame(RTSP_URL, OUTPUT_DIR)
+
+            if datetime.now().strftime("%Y%m%d") != CURRENT_DAY:
+                print("New day, creating new directory")
+                CURRENT_DAY = datetime.now().strftime("%Y%m%d")
+                create_timelapse_videos(OUTPUT_DIR, VIDEO_DIR, FPS)
+
             time.sleep(CAPTURE_INTERVAL)
     except Exception as e:
         print(f"Capture loop encountered an error: {e}")
