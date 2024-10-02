@@ -8,8 +8,10 @@ import schedule
 import threading
 import ffmpeg
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from capture import capture_loop
 from glob import glob
+
+from capture import capture_loop
+from render import create_timelapse_videos
 
 # Directories for frames, videos, and thumbnails
 OUTPUT_DIR = os.getenv('OUTPUT_DIR', 'timelapse_frames')
@@ -77,63 +79,14 @@ def daily_timelapse():
 
     create_timelapse(video_output, images)
 
-def create_timelapse_videos():
-    print("Creating timelapse videos...")
-
-    # Get all the images in the OUTPUT_DIR directory
-    image_files = glob(os.path.join(OUTPUT_DIR, "*.jpg"))
-    
-    # Group images by date
-    images_by_date = {}
-    for image_file in image_files:
-        date_str = os.path.basename(image_file).split('_')[0]
-        if date_str not in images_by_date:
-            images_by_date[date_str] = []
-        images_by_date[date_str].append(image_file)
-    
-    # Create a timelapse video for each day
-    for date_str, images in images_by_date.items():
-        images.sort()  # Ensure images are in chronological order
-        frame = cv2.imread(images[0])
-        height, width, layers = frame.shape
-        video_filename = os.path.join(VIDEO_DIR, f"{date_str}.mp4")
-        print(f"Rendering: {video_filename}")
-
-        # Generate a file list for FFmpeg input
-        file_list = os.path.join(OUTPUT_DIR, f"{date_str}_file_list.txt")
-        with open(file_list, 'w') as f:
-            for image in images:
-                f.write(f"file '{image}'\n")
-
-        # Use FFmpeg to create the video
-        ffmpeg_command = [
-            'ffmpeg', '-y', '-r', str(FPS), '-f', 'concat', '-safe', '0',
-            '-i', file_list, '-vcodec', 'libx264', '-preset', 'slower', '-crf', '24', '-pix_fmt', 'yuv420p', video_filename
-        ]
-        subprocess.run(ffmpeg_command)
-
-        # Remove the file list after video creation
-        os.remove(file_list)
-
-        # Infer the thumbnail path based on the video path
-        thumbnail_path = os.path.splitext(video_filename)[0] + ".jpg"
-
-        # Save the middle frame as the thumbnail
-        if images:
-            thumb_frame = int(len(images) / 2)
-            thumb_image = cv2.imread(images[thumb_frame])
-            cv2.imwrite(thumbnail_path, thumb_image)
-
-    print("Timelapse videos created.")
-
 # Flask route to serve thumbnails from the timelapse_thumbnails folder
 @app.route('/timelapse_thumbnails/<filename>')
 def timelapse_thumbnails(filename):
     return send_from_directory(THUMBNAIL_DIR, filename)
 
 # Flask route to serve the last generated video
-@app.route('/download_timelapse/<filename>')
-def download_timelapse(filename):
+@app.route('/timelapse_videos/<filename>')
+def timelapse_videos(filename):
     video_output = os.path.join(VIDEO_DIR, filename)
     
     if os.path.exists(video_output):
@@ -161,7 +114,7 @@ def run_flask():
 
 if __name__ == '__main__':
     # recreate timelapse videos on startup
-    create_timelapse_videos()
+    create_timelapse_videos(OUTPUT_DIR, VIDEO_DIR, FPS)
 
     # Start the capture loop in a separate thread
     capture_thread = threading.Thread(target=capture_loop, args=(OUTPUT_DIR,), name="CaptureThread")

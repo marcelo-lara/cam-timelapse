@@ -1,28 +1,14 @@
 import cv2
-import time
-import os
-from datetime import datetime
-import schedule
-import threading
-import ffmpeg
 from glob import glob
+import os
+import subprocess
 
-# Directories for frames, videos, and thumbnails
-OUTPUT_DIR = os.getenv('OUTPUT_DIR', 'timelapse_frames')
-VIDEO_DIR = os.getenv('VIDEO_DIR', 'timelapse_videos')
-THUMBNAIL_DIR = os.getenv('THUMBNAIL_DIR', VIDEO_DIR)
-FPS = int(os.getenv('FPS', 30))
 
-# Ensure the necessary directories exist
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-os.makedirs(VIDEO_DIR, exist_ok=True)
-os.makedirs(THUMBNAIL_DIR, exist_ok=True)
-
-def create_timelapse_videos():
+def create_timelapse_videos(FRAMES_DIR, VIDEO_DIR, FPS = 30):
     print("Creating timelapse videos...")
 
-    # Get all the images in the OUTPUT_DIR directory
-    image_files = glob(os.path.join(OUTPUT_DIR, "*.jpg"))
+    # Get all the images in the FRAMES_DIR directory
+    image_files = glob(os.path.join(FRAMES_DIR, "*.jpg"))
     
     # Group images by date
     images_by_date = {}
@@ -38,27 +24,37 @@ def create_timelapse_videos():
         frame = cv2.imread(images[0])
         height, width, layers = frame.shape
         video_filename = os.path.join(VIDEO_DIR, f"{date_str}.mp4")
-        print(f"rendering: {video_filename}")
+        print(f"Rendering: {video_filename}")
 
-        video = cv2.VideoWriter(video_filename, cv2.VideoWriter_fourcc(*'avc1'), FPS, (width, height))
+        # Generate a file list for FFmpeg input
+        file_list = os.path.join(FRAMES_DIR, f"{date_str}_file_list.txt")
+        with open(file_list, 'w') as f:
+            for image in images:
+                f.write(f"file '{image}'\n")
 
-        for image in images:
-            frame = cv2.imread(image)
-            video.write(frame)
-        
-        video.release()
+        # Use FFmpeg to create the video
+        ffmpeg_command = [
+            'ffmpeg', '-y', '-r', str(FPS), '-f', 'concat', '-safe', '0',
+            '-i', file_list, '-vcodec', 'libx264', '-preset', 'slower', '-crf', '24', '-pix_fmt', 'yuv420p', video_filename
+        ]
+        subprocess.run(ffmpeg_command)
+
 
         # Infer the thumbnail path based on the video path
         thumbnail_path = os.path.splitext(video_filename)[0] + ".jpg"
 
-        # Save the first frame as the thumbnail
+        # Save the middle frame as the thumbnail
         if images:
-            thumb_frame = int(len(images) / 2 )
+            thumb_frame = int(len(images) / 2)
             thumb_image = cv2.imread(images[thumb_frame])
             cv2.imwrite(thumbnail_path, thumb_image)
 
-    print("Timelapse videos created.")
+        # Remove the file list after video creation
+        os.remove(file_list)
 
-if __name__ == '__main__':
-    # recreate timelapse videos on startup
-    create_timelapse_videos()
+        # Remove the source images
+        for image in images:
+            os.remove(image)
+
+
+    print("Timelapse videos created.")

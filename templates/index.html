@@ -24,6 +24,14 @@
             text-decoration: none;
             color: black;
         }
+        .video-container {
+            margin-top: 20px;
+
+        }
+        .video-container video {
+            width: 50%;
+            height: auto;
+        }
     </style>
 </head>
 <body>
@@ -32,7 +40,7 @@
     <div class="thumbnail-grid">
         {% for video, thumbnail in videos.items() %}
         <div class="thumbnail-item">
-            <a href="/download_timelapse/{{ video }}">
+            <a href="#" onclick="playVideo('{{ video }}'); return false;">
                 <img src="/timelapse_thumbnails/{{ thumbnail }}" alt="Thumbnail for {{ video }}">
                 <p>{{ video }}</p>
             </a>
@@ -40,7 +48,23 @@
         {% endfor %}
     </div>
 
+    <div class="video-container">
+        <video id="mainVideo" controls>
+            <source id="videoSource" src="" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
     <div class="message" id="message"></div>
 
+    <script>
+        function playVideo(video) {
+            var videoElement = document.getElementById('mainVideo');
+            var sourceElement = document.getElementById('videoSource');
+            sourceElement.src = '/timelapse_videos/' + video;
+            videoElement.load();
+            videoElement.play();
+        }
+    </script>
 </body>
 </html>

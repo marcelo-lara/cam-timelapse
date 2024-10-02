@@ -19,7 +19,12 @@ services:
       - ./timelapse_frames:/usr/src/app/timelapse_frames  # Bind mount the frame output folder
       - ./timelapse_videos:/usr/src/app/timelapse_videos  # Bind mount the frame output folder
     restart: unless-stopped
+    networks:
+      - cam-timelapse-network    
 
 secrets:
   rtsp_url:
     file: .secrets
+
+networks:
+  cam-timelapse-network:
