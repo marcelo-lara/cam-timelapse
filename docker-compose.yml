@@ -8,8 +8,8 @@ services:
     container_name: timelapse_frontend
     environment:
       - CAPTURE_INTERVAL=30  # Time interval in seconds (default 120)
-      - OUTPUT_DIR=/usr/src/app/timelapse_frames  # Directory for storing captured frames
-      - VIDEO_OUTPUT=/usr/src/app/timelapse_video  # Path for the timelapse videos
+      - OUTPUT_DIR=/usr/src/app/timelapse/frames  # Directory for storing captured frames
+      - VIDEO_OUTPUT=/usr/src/app/timelapse/videos  # Path for the timelapse videos
       - FRAME_WIDTH=1280  # Width of the captured frames
       - FRAME_HEIGHT=720  # Height of the captured frames
       - FPS=30  # Frames per second for the timelapse video
@@ -18,8 +18,7 @@ services:
     ports:
       - "5000:5000"  # Expose the web UI on port 5000
     volumes:
-      - ./timelapse_frames:/usr/src/app/timelapse_frames  # Bind mount the frame output folder
-      - ./timelapse_videos:/usr/src/app/timelapse_videos  # Bind mount the frame output folder
+      - ./timelapse:/usr/src/app/timelapse  # Bind mount the frame output folder
     restart: unless-stopped
     networks:
       - cam-timelapse-network    
@@ -31,16 +30,15 @@ services:
     container_name: timelapse_capture
     environment:
       - CAPTURE_INTERVAL=30  # Time interval in seconds (default 120)
-      - OUTPUT_DIR=/usr/src/app/timelapse_frames  # Directory for storing captured frames
-      - VIDEO_OUTPUT=/usr/src/app/timelapse_video  # Path for the timelapse videos
+      - OUTPUT_DIR=/usr/src/app/timelapse/frames  # Directory for storing captured frames
+      - VIDEO_OUTPUT=/usr/src/app/timelapse/videos  # Path for the timelapse videos
       - FRAME_WIDTH=1280  # Width of the captured frames
       - FRAME_HEIGHT=720  # Height of the captured frames
       - FPS=30  # Frames per second for the timelapse video
     secrets:
       - rtsp_url
     volumes:
-      - ./timelapse_frames:/usr/src/app/timelapse_frames  # Bind mount the frame output folder
-      - ./timelapse_videos:/usr/src/app/timelapse_videos  # Bind mount the frame output folder
+      - ./timelapse:/usr/src/app/timelapse  # Bind mount the frame output folder
     restart: unless-stopped
     networks:
       - cam-timelapse-network    
