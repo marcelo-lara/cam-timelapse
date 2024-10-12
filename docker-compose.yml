@@ -1,11 +1,13 @@
 version: '3'
 
 services:
-  timelapse:
-    build: .
-    container_name: timelapse_capture
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    container_name: timelapse_frontend
     environment:
-      - CAPTURE_INTERVAL=60  # Time interval in seconds (default 120)
+      - CAPTURE_INTERVAL=30  # Time interval in seconds (default 120)
       - OUTPUT_DIR=/usr/src/app/timelapse_frames  # Directory for storing captured frames
       - VIDEO_OUTPUT=/usr/src/app/timelapse_video  # Path for the timelapse videos
       - FRAME_WIDTH=1280  # Width of the captured frames
@@ -15,6 +17,27 @@ services:
       - rtsp_url
     ports:
       - "5000:5000"  # Expose the web UI on port 5000
+    volumes:
+      - ./timelapse_frames:/usr/src/app/timelapse_frames  # Bind mount the frame output folder
+      - ./timelapse_videos:/usr/src/app/timelapse_videos  # Bind mount the frame output folder
+    restart: unless-stopped
+    networks:
+      - cam-timelapse-network    
+
+  capture:
+    build:
+      context: .
+      dockerfile: capture.Dockerfile
+    container_name: timelapse_capture
+    environment:
+      - CAPTURE_INTERVAL=30  # Time interval in seconds (default 120)
+      - OUTPUT_DIR=/usr/src/app/timelapse_frames  # Directory for storing captured frames
+      - VIDEO_OUTPUT=/usr/src/app/timelapse_video  # Path for the timelapse videos
+      - FRAME_WIDTH=1280  # Width of the captured frames
+      - FRAME_HEIGHT=720  # Height of the captured frames
+      - FPS=30  # Frames per second for the timelapse video
+    secrets:
+      - rtsp_url
     volumes:
       - ./timelapse_frames:/usr/src/app/timelapse_frames  # Bind mount the frame output folder
       - ./timelapse_videos:/usr/src/app/timelapse_videos  # Bind mount the frame output folder
